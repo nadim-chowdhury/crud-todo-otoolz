@@ -1,25 +1,24 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  DragDropContext,
-  Droppable,
-  Draggable,
-  DropResult,
-} from "react-beautiful-dnd";
+import { DragDropContext, Droppable, DropResult } from "react-beautiful-dnd";
 import {
   fetchTasks,
   createTask,
   updateTaskById,
   deleteTaskById,
 } from "@/utils/apiClient";
-import { FiEdit, FiTrash2 } from "react-icons/fi"; // Add these icon imports
-import Modal from "@/components/Modal"; // Assuming you have a modal component or create one as shown below
+import Modal from "@/components/Modal";
+import TaskCard from "@/components/TaskCard";
+import { FiPlusCircle } from "react-icons/fi";
+import axios from "axios";
+import { API_URL } from "@/utils/apiClient";
 
 interface Task {
   id: string;
   content: string;
   description: string;
+  position: number;
 }
 
 interface Column {
@@ -37,6 +36,7 @@ interface APITask {
   title: string;
   description: string;
   status: string;
+  position: number;
 }
 
 const Home = () => {
@@ -49,7 +49,6 @@ const Home = () => {
   const [editingTask, setEditingTask] = useState<APITask | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
 
-  // Fetch initial tasks when component mounts
   useEffect(() => {
     const loadTasks = async () => {
       try {
@@ -60,15 +59,23 @@ const Home = () => {
           Done: { id: "Done", title: "Done", items: [] },
         };
 
+        // Sort tasks by their positions within each status/column
         tasks.forEach((task: APITask) => {
-          // Map task status to corresponding columns
           if (updatedColumns[task.status]) {
             updatedColumns[task.status].items.push({
               id: task._id,
               content: task.title,
               description: task.description,
+              position: task.position,
             });
           }
+        });
+
+        // Sort the tasks in each column by their position
+        Object.keys(updatedColumns).forEach((columnId) => {
+          updatedColumns[columnId].items.sort(
+            (a, b) => a.position - b.position
+          );
         });
 
         setColumns(updatedColumns);
@@ -80,27 +87,42 @@ const Home = () => {
     loadTasks();
   }, []);
 
-  // Handle Drag and Drop
-  const onDragEnd = async (result: DropResult) => {
-    if (!result.destination) {
-      console.log("No destination provided");
-      return;
+  const updateColumnOrder = async (
+    columnId: string,
+    items: { id: string; position: number }[]
+  ) => {
+    try {
+      // Make an API call to update the order of tasks in the column
+      await axios.put(`${API_URL}/order`, {
+        columnId,
+        tasks: items.map((item) => ({ id: item.id, position: item.position })), // Send the updated tasks with positions
+      });
+    } catch (error) {
+      console.error("Error updating column order:", error);
     }
+  };
+
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
 
     const { source, destination } = result;
 
     if (source.droppableId !== destination.droppableId) {
+      // Moving to a different column
       const sourceColumn = columns[source.droppableId];
       const destColumn = columns[destination.droppableId];
       const sourceItems = Array.from(sourceColumn.items);
       const destItems = Array.from(destColumn.items);
 
-      // Remove the dragged item from the source column
       const [removed] = sourceItems.splice(source.index, 1);
-      // Add the dragged item to the destination column at the correct index
+      removed.position = destination.index; // Update the position in the moved item
       destItems.splice(destination.index, 0, removed);
 
-      // Update state immutably
+      // Update positions within the destination column
+      destItems.forEach((item, index) => {
+        item.position = index;
+      });
+
       const updatedColumns = {
         ...columns,
         [source.droppableId]: { ...sourceColumn, items: sourceItems },
@@ -109,22 +131,31 @@ const Home = () => {
 
       setColumns(updatedColumns);
 
-      // Update task status in backend
       try {
+        // Update task status and position in the backend
         await updateTaskById(removed.id, {
           title: removed.content,
           description: removed.description,
           status: destination.droppableId,
+          position: destination.index, // Pass position to the backend
         });
+
+        // Optionally, update the entire order of the column
+        await updateColumnOrder(destination.droppableId, destItems);
       } catch (error) {
         console.error("Error updating task:", error);
       }
     } else {
-      // Handle reordering within the same column
+      // Reordering within the same column
       const column = columns[source.droppableId];
       const copiedItems = Array.from(column.items);
       const [removed] = copiedItems.splice(source.index, 1);
       copiedItems.splice(destination.index, 0, removed);
+
+      // Update positions within the same column
+      copiedItems.forEach((item, index) => {
+        item.position = index;
+      });
 
       setColumns((prevColumns) => ({
         ...prevColumns,
@@ -133,14 +164,28 @@ const Home = () => {
           items: copiedItems,
         },
       }));
+
+      // Update task order in the backend
+      try {
+        await updateColumnOrder(source.droppableId, copiedItems);
+      } catch (error) {
+        console.error("Error updating task order:", error);
+      }
     }
   };
 
-  // Handle task creation
   const handleTaskCreate = async () => {
     if (!newTask.title) return;
     try {
-      const createdTask = await createTask(newTask);
+      // Determine the new position based on the current number of items in "To Do" column
+      const newPosition = columns["To Do"].items.length;
+
+      // Create a new task with title, description, and position
+      const createdTask = await createTask({
+        ...newTask,
+        position: newPosition,
+      });
+
       setColumns((prev) => ({
         ...prev,
         "To Do": {
@@ -151,6 +196,7 @@ const Home = () => {
               id: createdTask._id,
               content: createdTask.title,
               description: createdTask.description,
+              position: newPosition, // Add the new position to the task
             },
           ],
         },
@@ -162,9 +208,14 @@ const Home = () => {
     }
   };
 
-  // Handle task edit
   const handleTaskEdit = (task: APITask) => {
-    setEditingTask(task);
+    setEditingTask({
+      _id: task._id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      position: task.position, // Ensure this is included
+    });
     setNewTask({ title: task.title, description: task.description });
     setShowModal(true);
   };
@@ -202,7 +253,6 @@ const Home = () => {
     }
   };
 
-  // Handle task deletion
   const handleTaskDelete = async (taskId: string, status: string) => {
     try {
       await deleteTaskById(taskId);
@@ -223,13 +273,15 @@ const Home = () => {
   return (
     <div>
       <div className="flex items-center justify-between p-8">
-        <h1 className="text-3xl font-bold capitalize">Task MGT</h1>
+        <h1 className="text-3xl font-bold uppercase">
+          Task <span className="text-blue-500">MGT</span>
+        </h1>
 
         <button
           onClick={() => setShowModal(true)}
-          className="mb-4 p-2 bg-blue-500 text-white rounded"
+          className="mb-4 p-2 bg-blue-500 text-white rounded flex items-center gap-2"
         >
-          Add Task
+          Add Task <FiPlusCircle />
         </button>
       </div>
 
@@ -249,51 +301,23 @@ const Home = () => {
                 >
                   <h2 className="text-xl font-semibold mb-4">{column.title}</h2>
                   {column.items.map((task, index) => (
-                    <Draggable
+                    <TaskCard
                       key={task.id}
-                      draggableId={task.id}
+                      taskId={task.id}
+                      content={task.content}
+                      description={task.description}
                       index={index}
-                    >
-                      {(provided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className="bg-white p-4 mb-2 rounded-md border flex justify-between items-center"
-                          style={{ ...provided.draggableProps.style }}
-                        >
-                          <div>
-                            <div className="font-semibold">{task.content}</div>
-                            <div className="text-sm text-gray-500">
-                              {task.description}
-                            </div>
-                          </div>
-                          <div className="flex">
-                            <button
-                              onClick={() =>
-                                handleTaskEdit({
-                                  _id: task.id,
-                                  title: task.content,
-                                  description: task.description,
-                                  status: columnId,
-                                })
-                              }
-                              className="p-2 rounded-full hover:bg-blue-100"
-                            >
-                              <FiEdit className="text-blue-500" />
-                            </button>
-                            <button
-                              onClick={() =>
-                                handleTaskDelete(task.id, columnId)
-                              }
-                              className="p-2 rounded-full hover:bg-red-100"
-                            >
-                              <FiTrash2 className="text-red-500" />
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </Draggable>
+                      onEdit={() =>
+                        handleTaskEdit({
+                          _id: task.id,
+                          title: task.content,
+                          description: task.description,
+                          status: columnId,
+                          position: task.position,
+                        })
+                      }
+                      onDelete={() => handleTaskDelete(task.id, columnId)}
+                    />
                   ))}
                   {provided.placeholder}
                 </div>
