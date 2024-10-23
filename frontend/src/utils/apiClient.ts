@@ -1,11 +1,12 @@
 import axios from "axios";
+import { demoData } from "./demoData";
 
 export const API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/tasks";
 
 export const fetchTasks = async () => {
   const response = await axios.get(API_URL);
-  return response.data;
+  return response.data || demoData;
 };
 
 export const createTask = async (task: {

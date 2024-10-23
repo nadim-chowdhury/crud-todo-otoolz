@@ -278,7 +278,7 @@ const Home = () => {
     }
   };
 
-  if (!window) return null;
+  // if (!window) return null;
 
   return (
     <>

@@ -56,11 +56,11 @@ exports.updateTask = async (req, res) => {
 
 // @desc Update task order in a column
 exports.updateTaskOrder = async (req, res) => {
-  console.log("exports.updateTaskOrder= ~ req:", req);
+  // console.log("exports.updateTaskOrder= ~ req:", req);
 
   try {
     const { columnId, tasks } = req.body;
-    console.log("Received payload:", { columnId, tasks });
+    // console.log("Received payload:", { columnId, tasks });
 
     if (!columnId || !Array.isArray(tasks)) {
       return res
@@ -100,7 +100,7 @@ exports.updateTaskOrder = async (req, res) => {
         throw err;
       }
     });
-    console.log("updatePromises ~ updatePromises:", updatePromises);
+    // console.log("updatePromises ~ updatePromises:", updatePromises);
 
     // Wait for all promises to resolve
     await Promise.all(updatePromises);
