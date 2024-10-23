@@ -13,31 +13,7 @@ import TaskCard from "@/components/TaskCard";
 import { FiPlusCircle } from "react-icons/fi";
 import axios from "axios";
 import { API_URL } from "@/utils/apiClient";
-
-interface Task {
-  id: string;
-  content: string;
-  description: string;
-  position: number;
-}
-
-interface Column {
-  id: string;
-  title: string;
-  items: Task[];
-}
-
-interface TaskList {
-  [key: string]: Column;
-}
-
-interface APITask {
-  _id: string;
-  title: string;
-  description: string;
-  status: string;
-  position: number;
-}
+import { APITask, TaskList } from "@/types/interfaces";
 
 const Home = () => {
   const [columns, setColumns] = useState<TaskList>({
@@ -48,8 +24,15 @@ const Home = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<APITask | null>(null);
   const [newTask, setNewTask] = useState({ title: "", description: "" });
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return; // Prevent running on SSR
+
     const loadTasks = async () => {
       try {
         const tasks: APITask[] = await fetchTasks();
@@ -85,18 +68,28 @@ const Home = () => {
     };
 
     loadTasks();
-  }, []);
+  }, [isMounted]);
 
   const updateColumnOrder = async (
     columnId: string,
     items: { id: string; position: number }[]
   ) => {
+    console.log("Home ~ items:", items);
+    console.log("Home ~ columnId:", columnId);
+
     try {
+      // Log the payload being sent to the server
+      console.log("Sending payload to server:", {
+        columnId,
+        tasks: items.map((item) => ({ id: item.id, position: item.position })),
+      });
+
       // Make an API call to update the order of tasks in the column
-      await axios.put(`${API_URL}/order`, {
+      const res = await axios.post(`${API_URL}/order`, {
         columnId,
         tasks: items.map((item) => ({ id: item.id, position: item.position })), // Send the updated tasks with positions
       });
+      console.log("Home ~ res:", res);
     } catch (error) {
       console.error("Error updating column order:", error);
     }
@@ -128,6 +121,7 @@ const Home = () => {
         [source.droppableId]: { ...sourceColumn, items: sourceItems },
         [destination.droppableId]: { ...destColumn, items: destItems },
       };
+      console.log("onDragEnd ~ updatedColumns:", updatedColumns);
 
       setColumns(updatedColumns);
 
@@ -141,7 +135,14 @@ const Home = () => {
         });
 
         // Optionally, update the entire order of the column
-        await updateColumnOrder(destination.droppableId, destItems);
+        const updateColumnOrderIfres = await updateColumnOrder(
+          destination.droppableId,
+          destItems
+        );
+        console.log(
+          "onDragEnd ~ updateColumnOrderIfres:",
+          updateColumnOrderIfres
+        );
       } catch (error) {
         console.error("Error updating task:", error);
       }
@@ -167,7 +168,14 @@ const Home = () => {
 
       // Update task order in the backend
       try {
-        await updateColumnOrder(source.droppableId, copiedItems);
+        const updateColumnOrderElseres = await updateColumnOrder(
+          source.droppableId,
+          copiedItems
+        );
+        console.log(
+          "onDragEnd ~ updateColumnOrderElseres:",
+          updateColumnOrderElseres
+        );
       } catch (error) {
         console.error("Error updating task order:", error);
       }
@@ -271,7 +279,7 @@ const Home = () => {
   };
 
   return (
-    <div>
+    <>
       <div className="flex items-center justify-between p-8">
         <h1 className="text-3xl font-bold uppercase">
           Task <span className="text-blue-500">MGT</span>
@@ -292,6 +300,9 @@ const Home = () => {
               droppableId={columnId}
               key={columnId}
               direction="vertical"
+              isDropDisabled={false}
+              isCombineEnabled={false}
+              ignoreContainerClipping={false}
             >
               {(provided) => (
                 <div
@@ -362,7 +373,7 @@ const Home = () => {
           </div>
         </Modal>
       )}
-    </div>
+    </>
   );
 };
 

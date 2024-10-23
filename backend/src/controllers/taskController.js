@@ -10,22 +10,16 @@ exports.getTasks = async (req, res) => {
   }
 };
 
-// // @desc    Create new task
-// exports.createTask = async (req, res) => {
-//   try {
-//     const { title, description, status } = req.body;
-//     const newTask = new Task({ title, description, status });
-//     await newTask.save();
-//     res.status(201).json(newTask);
-//   } catch (error) {
-//     res.status(500).json({ message: "Server Error" });
-//   }
-// };
-
 // @desc    Create new task
 exports.createTask = async (req, res) => {
   try {
     const { title, description, status } = req.body;
+    console.log("exports.createTask= ~ req.body:", {
+      title,
+      description,
+      status,
+    });
+
     // Find the current max position in the given status column
     const maxPositionTask = await Task.findOne({ status })
       .sort("-position")
@@ -52,6 +46,8 @@ exports.updateTask = async (req, res) => {
     const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
     });
+    // console.log("exports.updateTask= ~ task:", task);
+
     res.status(200).json(task);
   } catch (error) {
     res.status(500).json({ message: "Server Error" });
@@ -60,9 +56,11 @@ exports.updateTask = async (req, res) => {
 
 // @desc Update task order in a column
 exports.updateTaskOrder = async (req, res) => {
+  console.log("exports.updateTaskOrder= ~ req:", req);
+
   try {
     const { columnId, tasks } = req.body;
-    console.log("exports.updateTaskOrder= ~ tasks:", tasks);
+    console.log("Received payload:", { columnId, tasks });
 
     if (!columnId || !Array.isArray(tasks)) {
       return res
@@ -80,24 +78,37 @@ exports.updateTaskOrder = async (req, res) => {
     }
 
     // Update each task's position in the database
-    const updatePromises = tasks.map(
-      (task) =>
-        Task.findByIdAndUpdate(
+    const updatePromises = tasks.map(async (task) => {
+      try {
+        const updatedTask = await Task.findByIdAndUpdate(
           task.id,
           {
             position: task.position,
-            status: columnId, // Ensure the status matches the column
+            status: columnId,
           },
           { new: true }
-        ) // Return the updated document
-    );
+        );
 
+        if (!updatedTask) {
+          console.error(`Task with ID ${task.id} not found`);
+          throw new Error(`Task with ID ${task.id} not found`);
+        }
+
+        return updatedTask;
+      } catch (err) {
+        console.error(`Error updating task with ID ${task.id}:`, err);
+        throw err;
+      }
+    });
+    console.log("updatePromises ~ updatePromises:", updatePromises);
+
+    // Wait for all promises to resolve
     await Promise.all(updatePromises);
 
     res.status(200).json({ message: "Task order updated successfully" });
   } catch (error) {
     console.error("Error updating task order:", error);
-    res.status(500).json({ message: "Server Error", error });
+    res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
 

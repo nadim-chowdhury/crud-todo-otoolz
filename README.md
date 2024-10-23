@@ -1,6 +1,5 @@
 # Task Management Application
 
-````markdown
 This is a task management application built with a React-based frontend and a Node.js Express backend, connected to a MongoDB database. The project is containerized using Docker for easier setup and deployment.
 
 ## Prerequisites
@@ -10,17 +9,16 @@ Ensure you have the following software installed on your machine:
 - **Docker**: [Download Docker](https://docs.docker.com/get-docker/)
 - **Docker Compose**: Docker Compose is included with Docker Desktop
 
-# Setup and Running
+## Setup and Running
 
-## Step 1: Clone the Repository
+### Step 1: Clone the Repository
 
 ```bash
 git clone <repository-url>
 cd <repository-directory>
 ```
-````
 
-## Step 2: Build and Run the Docker Containers
+### Step 2: Build and Run the Docker Containers
 
 To build and run the containers, execute the following command:
 
