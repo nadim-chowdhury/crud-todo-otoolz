@@ -1,4 +1,6 @@
-import type { Metadata } from "next";
+"use client";
+
+// import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 
@@ -13,10 +15,10 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: "CRUD TODO",
-  description: "Developed by Nadim Chowdhury",
-};
+// export const metadata: Metadata = {
+//   title: "CRUD TODO",
+//   description: "Developed by Nadim Chowdhury",
+// };
 
 export default function RootLayout({
   children,

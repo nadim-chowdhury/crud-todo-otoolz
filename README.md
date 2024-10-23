@@ -18,7 +18,7 @@ git clone <repository-url>
 cd <repository-directory>
 ```
 
-### Step 2: Build and Run the Docker Containers
+### Step 2: Open Docker Desktop, Build and Run the Docker Containers
 
 To build and run the containers, execute the following command:
 
