@@ -41,11 +41,11 @@ const TaskCard: React.FC<TaskCardProps> = ({
               <div className="text-sm text-gray-500 mt-1">{description}</div>
             )}
           </div>
-          <div className="flex space-x-2 ml-2">
+          <div className="flex ml-2">
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="text-blue-500 hover:text-blue-700 p-1 rounded-full"
+                className="text-blue-500 hover:text-blue-700 p-2 rounded-full transition-all duration-300 hover:bg-blue-100"
               >
                 <FiEdit />
               </button>
@@ -53,7 +53,7 @@ const TaskCard: React.FC<TaskCardProps> = ({
             {onDelete && (
               <button
                 onClick={onDelete}
-                className="text-red-500 hover:text-red-700 p-1 rounded-full"
+                className="text-red-500 hover:text-red-700 p-2 rounded-full transition-all duration-300 hover:bg-red-100"
               >
                 <FiTrash2 />
               </button>

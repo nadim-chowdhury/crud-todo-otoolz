@@ -283,20 +283,23 @@ const Home = () => {
   return (
     <>
       <div className="flex items-center justify-between p-8">
-        <h1 className="text-3xl font-bold uppercase">
-          Task <span className="text-blue-500">MGT</span>
+        <h1 className="text-3xl font-bold uppercase cursor-pointer">
+          Task{" "}
+          <span className="text-blue-500 hover:text-blue-700 transition-all duration-300">
+            MGT
+          </span>
         </h1>
 
         <button
           onClick={() => setShowModal(true)}
-          className="mb-4 p-2 bg-blue-500 text-white rounded flex items-center gap-2"
+          className="px-4 py-2 bg-blue-500 hover:bg-blue-700 transition-all duration-300 text-white rounded flex items-center gap-2"
         >
           Add Task <FiPlusCircle />
         </button>
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex justify-center gap-6 px-8">
+        <div className="flex flex-col md:flex-row justify-center gap-6 px-8">
           {Object.entries(columns).map(([columnId, column]) => (
             <Droppable
               droppableId={columnId}

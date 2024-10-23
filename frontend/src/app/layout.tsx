@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import Link from "next/link";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -29,6 +30,16 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+
+        <p className="mt-4 mb-8 text-center font-medium">
+          Developed by{" "}
+          <Link
+            href="https://nadim.vercel.app"
+            className="text-blue-500 hover:text-blue-700 transition-all duration-300"
+          >
+            Nadim Chowdhury
+          </Link>
+        </p>
       </body>
     </html>
   );

@@ -22,4 +22,4 @@ RUN npm run build
 EXPOSE 3000
 
 # Start the Next.js app in production mode
-CMD ["npm", "run", "dev"]
+CMD ["npx", "serve@latest", "out"]

@@ -14,7 +14,8 @@
     "react": "19.0.0-rc-65a56d0e-20241020",
     "react-beautiful-dnd": "^13.1.1",
     "react-dom": "19.0.0-rc-65a56d0e-20241020",
-    "react-icons": "^5.3.0"
+    "react-icons": "^5.3.0",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@types/node": "^20",
